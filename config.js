@@ -5,9 +5,25 @@ const SUPABASE_URL = "https://drryamosodluupxbbtee.supabase.co";
 const SUPABASE_ANON_KEY =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRycnlhbW9zb2RsdXVweGJidGVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzEwMTgsImV4cCI6MjA5ODgwNzAxOH0.q_Dq4w3Ugv7rCq3NeEXSIYEuNCbsG19Ghsj2vo0_TOc";
 
+// KEAMANAN: PIN admin yang tersimpan di perangkat ini ikut dikirim (header x-admin-pin)
+// supaya tabel inti hanya bisa dibuka dari dashboard admin. Lihat docs/01-KEAMANAN.md.
+function adminDevicePin() { try { return localStorage.getItem("admin_device_pin") || ""; } catch (e) { return ""; } }
 const supabaseClient = supabase.createClient(
     SUPABASE_URL,
-    SUPABASE_ANON_KEY
+    SUPABASE_ANON_KEY,
+    {
+        global: {
+            fetch: (url, opts = {}) => {
+                const pin = adminDevicePin();
+                if (pin && /^[\x20-\x7E]+$/.test(pin)) {
+                    const h = new Headers(opts.headers || {});
+                    h.set("x-admin-pin", pin);
+                    opts = { ...opts, headers: h };
+                }
+                return fetch(url, opts);
+            }
+        }
+    }
 );
 
 // Dashboard aktif default
@@ -24,12 +40,3 @@ function getUTCDate() {
 // (atau biarkan kosong, lalu isi lewat tombol "Alamat Portal" saat memilih pelanggan).
 const PORTAL_PELANGGAN_URL = "pelanggan/";
 
-// ---------------------------------------------------------------------
-// KEAMANAN: login admin (Supabase Auth). Lihat docs/01-KEAMANAN.md.
-// false = seperti sebelumnya (tanpa login).
-// true  = dashboard admin wajib login email + password.
-// Ubah ke true SETELAH membuat user admin di Supabase -> Authentication,
-// lalu jalankan sql/keamanan/K2-login-admin-kunci-tabel.sql.
-const ADMIN_LOGIN_WAJIB = false;
-// Otomatis keluar bila tidak ada aktivitas (menit). 0 = nonaktif.
-const ADMIN_AUTO_LOGOUT_MENIT = 120;

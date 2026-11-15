@@ -1,7 +1,6 @@
 -- =====================================================================
 -- BATALKAN K2 — kembalikan akses tabel inti seperti semula (publik).
--- Pakai HANYA jika setelah K2 dashboard admin tidak bisa memuat data
--- dan Anda belum sempat memperbaiki login admin.
+-- Pakai HANYA jika setelah K2 dashboard admin tidak bisa memuat data.
 -- Tidak ada data yang dihapus.
 -- =====================================================================
 do $$

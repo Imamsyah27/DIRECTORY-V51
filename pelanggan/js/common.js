@@ -85,6 +85,8 @@ function clearSession() {
     sessionStorage.removeItem("admin_view_token");   // token lihat kedaluwarsa -> auth.js mengembalikan admin ke dashboard admin
     localStorage.removeItem("pelanggan_session_token");
     localStorage.removeItem("pelanggan_username");
+    // jangan tinggalkan data pesanan di perangkat (penting di HP/PC pinjaman)
+    try { localStorage.removeItem("no_last_choice"); sessionStorage.removeItem("no_tag_draft"); } catch (e) {}
 }
 
 /* Ubah URL di teks menjadi link yang bisa diklik (aman: teks di-escape dulu). Mendukung https://, www., chat.whatsapp.com, wa.me, t.me */

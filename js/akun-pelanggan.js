@@ -99,6 +99,7 @@ function bindAkunPelangganEvents() {
         }
         akunAdminPin = baru;
         sessionStorage.setItem("akun_admin_pin", baru);
+        try { if (localStorage.getItem("admin_device_pin")) localStorage.setItem("admin_device_pin", baru); } catch (e) {}   // PIN perangkat (js/keamanan.js)
         document.getElementById("akunPinLama").value = "";
         document.getElementById("akunPinBaru").value = "";
         showToast("PIN admin berhasil diganti", "success");

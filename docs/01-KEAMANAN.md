@@ -20,26 +20,44 @@ supabaseClient.from("orders").select("*")             // membaca semua nama + no
 
 PIN admin **tidak** melindungi tabel ini. PIN hanya dipakai oleh fungsi RPC.
 
-**Perbaikan (tidak menghapus data):**
-1. ✅ Layar **login admin** (email + password Supabase Auth): `js/admin-auth.js`. Aktif bila
-   `ADMIN_LOGIN_WAJIB = true` di `config.js`. Juga ada tombol Keluar dan auto-logout setelah 120 menit tanpa aktivitas.
-2. 🟡 `sql/keamanan/K2-login-admin-kunci-tabel.sql` mengganti policy publik dengan policy **khusus admin**
-   (tabel `app_admins` + fungsi `is_app_admin()`). Portal pelanggan tidak terpengaruh karena hanya memakai
-   fungsi RPC `security definer`. Saya sudah memeriksa: tidak ada fungsi SQL non-definer yang membaca tabel inti.
+> **Walau website admin tidak dipublikasikan, celah ini tetap terbuka**, karena anon key yang sama juga ada di
+> **portal pelanggan** (`pelanggan/config.js`). Setiap pelanggan yang membuka portal bisa menjalankan perintah di atas.
+> Repo GitHub ini juga **publik**, jadi isi `config.js` bisa dibaca siapa saja.
+
+**Perbaikan tanpa login email (tidak menghapus data):**
+1. ✅ Dashboard admin meminta **PIN admin sekali per perangkat** (layar "Buka Dashboard", `js/keamanan.js`).
+   PIN disimpan di perangkat itu dan otomatis ikut di setiap permintaan ke Supabase (header `x-admin-pin`, `config.js`).
+   Menu yang meminta PIN (Akun Pelanggan, Harga, Koin, dan lainnya) otomatis terbuka.
+   Tombol **Kunci** di header menghapus PIN dari perangkat, cocok dipakai di HP/PC pinjaman.
+2. 🟡 `sql/keamanan/K2-kunci-tabel-pin.sql` mengganti policy publik: tabel inti hanya bisa dibuka oleh permintaan yang
+   membawa PIN admin yang benar. Portal pelanggan tetap jalan karena hanya memakai fungsi RPC `security definer`.
 3. Bisa dibatalkan kapan saja dengan `sql/keamanan/K2-ROLLBACK.sql`.
 
-**Urutan aktivasi (ikuti persis supaya Anda tidak terkunci):**
+**Sudah diuji** di PostgreSQL 16 dengan skema dari `js/database.sql` + `customer_portal_fixed.sql` + `admin-view.sql`:
+
+| Uji | Hasil |
+|---|---|
+| Pengunjung portal (tanpa PIN) membaca `orders` | 0 baris ✅ |
+| Pengunjung portal menghapus semua `orders` | Tidak ada yang terhapus ✅ |
+| PIN salah | 0 baris, ditahan 0,8 detik ✅ |
+| Dashboard admin (PIN benar): baca, ubah, tambah | Berhasil ✅ |
+| Pelanggan login + lihat pesanan sendiri (RPC) | Berhasil ✅ |
+| K2 dijalankan sebelum K1 | Ditolak, tidak ada yang berubah ✅ |
+| Rollback | Akses kembali seperti semula ✅ |
+
+**Urutan aktivasi:**
 
 | # | Langkah | Di mana |
 |---|---|---|
-| 1 | Deploy kode terbaru ini (login masih nonaktif, tampilan tetap jalan) | Vercel |
-| 2 | Authentication → Users → **Add user** → email + password admin → centang *Auto Confirm* | Supabase |
-| 3 | Authentication → Sign In / Providers → **matikan "Allow new users to sign up"** | Supabase |
-| 4 | `config.js` → `const ADMIN_LOGIN_WAJIB = true;` → deploy → coba login | Kode |
-| 5 | Ganti `GANTI_EMAIL_ADMIN@contoh.com` di file K2 → jalankan seluruh file di SQL Editor | Supabase |
-| 6 | Uji: buka website di jendela penyamaran **tanpa login** → data tidak boleh muncul | Browser |
+| 1 | Jalankan `K1-pin-admin-anti-bruteforce.sql` | Supabase SQL Editor |
+| 2 | Deploy kode terbaru, buka dashboard admin, masukkan PIN di layar "Buka Dashboard" | Browser |
+| 3 | Jalankan `K2-kunci-tabel-pin.sql`. Jika muncul *"BELUM DIKUNCI"*: refresh dashboard admin sekali, lalu jalankan K2 lagi | Supabase SQL Editor |
+| 4 | Refresh dashboard admin → data harus muncul. Buka portal pelanggan → harus normal | Browser |
 
-> Langkah 5 otomatis **dibatalkan** (tidak mengubah apa pun) bila belum ada admin yang terdaftar.
+> K2 **menolak mengunci** sebelum terbukti dashboard admin Anda berhasil mengirim PIN ke server,
+> jadi Anda tidak mungkin terkunci di luar.
+> Jika nanti PIN diganti lewat menu Ganti PIN Admin, perangkat yang dipakai untuk mengganti ikut diperbarui otomatis.
+> Perangkat lain akan diminta memasukkan PIN baru.
 
 ## 🟠 2. PIN admin bisa ditebak otomatis (brute force) — 🟡 disiapkan
 
@@ -75,12 +93,12 @@ Ditambahkan:
 > Catatan: CSP masih mengizinkan `'unsafe-inline'` karena HTML memakai `onclick="..."` dan `style="..."`.
 > 💡 Langkah berikutnya: pindahkan handler inline ke file JS, lalu hapus `'unsafe-inline'` dari `script-src`.
 
-## 🟡 5. PIN admin disimpan polos di `sessionStorage` — 💡 saran
+## 🟡 5. PIN admin tersimpan di perangkat admin — 💡 saran
 
-`sessionStorage["akun_admin_pin"]` bisa dibaca script mana pun yang berjalan di halaman (risiko bila ada XSS).
-Setelah K2 aktif, **saran**: ganti pemeriksaan PIN di setiap fungsi dengan `is_app_admin()`
-(berdasarkan login Supabase). Dengan begitu PIN tidak perlu dikirim ulang dan tidak perlu disimpan.
-Ini perubahan besar (sekitar 200 fungsi), jadi sebaiknya dikerjakan bertahap per modul.
+PIN tersimpan di `localStorage` perangkat admin dan bisa dibaca script yang berjalan di halaman admin (risiko bila ada XSS).
+Itu sebabnya CSP diperketat dan library tidak lagi diambil dari CDN. Jangan memasukkan PIN di perangkat orang lain,
+atau tekan **Kunci** setelah selesai.
+💡 Jangka panjang: login Supabase Auth untuk admin (lebih kuat daripada PIN bersama).
 
 ## 🟡 6. XSS (sisipan HTML/script) — sudah relatif aman
 
@@ -88,11 +106,18 @@ Saya memeriksa 43 file yang memakai `innerHTML`. Data dari pelanggan (tagar, cat
 `escapeHtml()` / `linkify()`. Sisa `${...}` yang tidak di-escape hanya berupa angka atau teks internal.
 💡 Saran: atribut `src="data:${mime};base64,..."` pada QRIS sebaiknya divalidasi (`image/png|jpeg|webp`) di SQL.
 
-## 🟡 7. Data pribadi pelanggan — 💡 saran
+## 🟠 7. Keamanan akun pelanggan — ✅ / 🟡 `sql/keamanan/K3-keamanan-pelanggan.sql`
 
-- Nomor WhatsApp terbuka untuk publik sampai K2 dijalankan (lihat poin 1).
-- Sesi pelanggan tersimpan di `localStorage` selama 7 hari. 💡 Pertimbangkan 1–3 hari dan tombol "Keluar dari semua perangkat".
-- Link "lihat sebagai pelanggan" (`#av=<token>`) saat ini berlaku **8 jam** (`sql/admin-view.sql` baris 27). 💡 Cukup 30–60 menit: ganti `interval '8 hours'` menjadi `interval '1 hour'`.
+| Temuan | Perbaikan |
+|---|---|
+| Fungsi lama `customer_reset_password` bisa mereset password **hanya dengan username + nomor WA**. Nomor WA sendiri terbuka dari tabel `orders`, jadi akun bisa diambil alih | 🟡 K3 memastikan akses publiknya dicabut. `customer_portal_fixed.sql` sebenarnya sudah mencabutnya, tapi belum tentu bila dulu yang dijalankan versi lama |
+| Link "lihat sebagai pelanggan" berlaku **8 jam** | 🟡 K3: menjadi **1 jam** |
+| Password pelanggan minimal 6 karakter, boleh sama dengan username | ✅ portal + 🟡 K3: minimal **8**, tidak boleh sama dengan password lama atau username |
+| Salah password lama saat ganti password tidak diperlambat | 🟡 K3: ditahan 0,5 detik |
+| Draf tagar dan pilihan terakhir tertinggal di perangkat setelah keluar | ✅ dihapus otomatis saat pelanggan menekan Keluar |
+| Sesi login 7 hari | 💡 pertimbangkan 1–3 hari (ubah di `customer_login`) |
+
+K3 sudah diuji di PostgreSQL 16 (bisa dijalankan berulang, password yang sudah ada tetap berlaku).
 
 ## ⚪ 8. Lain-lain — 💡 saran
 
@@ -109,11 +134,12 @@ Saya memeriksa 43 file yang memakai `innerHTML`. Data dari pelanggan (tagar, cat
 
 | File | Perubahan |
 |---|---|
-| `js/admin-auth.js` (baru) | Login admin, logout, auto-logout, peringatan PIN default |
-| `config.js` | `ADMIN_LOGIN_WAJIB`, `ADMIN_AUTO_LOGOUT_MENIT` |
-| `js/init.js`, `js/autorefresh.js` | Tidak memuat data sebelum admin login |
-| `js/akun-pelanggan.js` | PIN baru minimal 8 karakter |
+| `js/keamanan.js` (baru) | PIN sekali per perangkat, tombol Kunci, peringatan PIN default |
+| `config.js` | Mengirim PIN perangkat (header `x-admin-pin`) |
+| `js/init.js`, `js/autorefresh.js` | Tidak memuat data sebelum PIN dimasukkan |
+| `js/akun-pelanggan.js` | PIN baru minimal 8 karakter, PIN perangkat ikut diperbarui |
+| `pelanggan/js/*` | Password minimal 8, data lokal dihapus saat keluar |
 | `vendor/*`, `pelanggan/vendor/*` (baru) | Library terkunci versi, tanpa CDN |
 | `index.html`, `pelanggan/*.html` | Memakai library lokal |
 | `vercel.json`, `pelanggan/vercel.json` | Header keamanan lengkap |
-| `sql/keamanan/K1…`, `K2…`, `K2-ROLLBACK` (baru) | SQL opsional, **tidak menghapus data** |
+| `sql/keamanan/K1`, `K2`, `K2-ROLLBACK`, `K3` (baru) | SQL opsional, **tidak menghapus data**, sudah diuji |

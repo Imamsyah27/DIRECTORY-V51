@@ -117,8 +117,12 @@ async function handleChangePassword() {
         showFormMsg("gantiPwMsg", t("err_fill_both_passwords"), "error");
         return;
     }
-    if (baru.length < 6) {
+    if (baru.length < 8) {
         showFormMsg("gantiPwMsg", t("err_password_min"), "error");
+        return;
+    }
+    if (baru === lama || baru.toLowerCase() === String(localStorage.getItem("pelanggan_username") || "").toLowerCase()) {
+        showFormMsg("gantiPwMsg", t("err_password_same"), "error");
         return;
     }
 

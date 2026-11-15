@@ -53,7 +53,7 @@ Tidak ada perubahan pada fungsi SQL atau data. Validasi akhir tetap dilakukan se
 10. Jangka panjang: **payment gateway QRIS dinamis** (Midtrans/Xendit/Tripay) + webhook untuk konfirmasi otomatis.
 
 ### Untuk admin
-11. Setelah login admin (K2) aktif, **hapus kewajiban PIN** untuk melihat pesanan masuk. PIN cukup untuk aksi sensitif
+11. Sudah ✅: PIN cukup dimasukkan **sekali per perangkat**, lalu menu ber-PIN otomatis terbuka. Saran berikutnya: minta PIN ulang hanya untuk aksi sensitif
     (hapus, ubah harga).
 12. **Tombol "Setujui semua yang sudah dibayar koin"** (pembayaran koin sudah pasti lunas).
 13. **Antrean terpadu**: satu daftar untuk semua pesanan masuk (Baru, Perpanjang, Bot, Bulk, Catalog, Supply,

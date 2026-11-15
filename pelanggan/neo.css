@@ -173,3 +173,29 @@ html.admin-locked .app-shell{ display:none !important; }
     border-bottom:1px solid var(--warning);
 }
 .sec-warn-bar button{ border:0; background:transparent; color:inherit; font-size:18px; cursor:pointer; line-height:1; }
+
+/* =========================================================
+   PORTAL PELANGGAN — dashboard lebih tenang & jelas (semua tema)
+   ========================================================= */
+/* Satu aksi utama per baris: tombol pertama penuh, sisanya bergaris */
+.order-new-row .btn.btn-primary:not(:first-child){
+    background:transparent !important; color:var(--text-primary) !important;
+    border:1px solid var(--border-strong) !important; box-shadow:none !important; background-image:none !important;
+}
+.order-new-row .btn.btn-primary:not(:first-child):hover{ border-color:var(--primary-ink) !important; color:var(--primary-ink) !important; }
+
+/* KPI di HP: 2 kolom, label tidak terpotong jelek */
+@media (max-width: 560px){
+    .kpi-strip{ display:grid !important; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+    .kpi-chip{ min-width:0; }
+    .kpi-chip .k-label{ font-size:10.5px !important; letter-spacing:.04em !important; line-height:1.3; }
+    .kpi-chip b{ font-size:20px; }
+    /* tema & bahasa: lebih ringkas supaya konten utama cepat terlihat */
+    .switch-row{ gap:6px !important; }
+    .switch-row .theme-switch button, .switch-row .lang-switch button{ padding:4px 9px !important; font-size:11.5px !important; min-height:30px !important; }
+    .portal-header .actions{ display:grid; grid-template-columns:1fr 1fr auto; gap:8px; width:100%; }
+    .portal-header .actions .btn{ min-width:0; padding-left:10px; padding-right:10px; }
+}
+/* tab: kursor & indikasi bisa digeser di HP */
+.p-tabs{ scroll-snap-type:x proximity; }
+.p-tabs button{ scroll-snap-align:start; white-space:nowrap; }

@@ -27,6 +27,12 @@ Tujuan: tampil **futuristik** seperti panel instrumen, tetapi **tidak terasa sep
 Neo menjadi **tema default**. Pengguna lama otomatis dipindahkan **sekali** ke Neo, dan tetap bisa kembali ke
 Putih, Hitam, Biru Muda, atau Pink lewat tombol tema. Tidak ada HTML lama yang dihapus.
 
+**Dashboard pelanggan (semua tema):**
+- Hanya **satu tombol utama** per baris (Pesan Langganan Baru). Bot Order dan Bulk Order dibuat bergaris,
+  sehingga mata langsung tahu aksi utamanya.
+- Kartu ringkasan di HP jadi **2 kolom**, label tidak terpotong.
+- Tombol tema & bahasa di HP diperkecil, tab bisa digeser dengan rapi.
+
 ## Saran lanjutan 💡 (belum dikerjakan agar tidak merusak alur yang sudah biasa dipakai)
 
 1. **Kurangi emoji di menu dan judul.** Emoji di setiap tombol adalah salah satu ciri paling kuat
