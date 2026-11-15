@@ -4,6 +4,7 @@
  * Tidak menimpa pekerjaan: ditunda bila kotak dialog terbuka, sedang mengetik, atau Mode Edit List-Farm aktif.
  */
 (function () {
+    if (window.ADMIN_LOCKED) return;   // belum login admin
     const INTERVAL = 12000;
     let last = null, pending = new Set(), busyFetch = false, fails = 0, timer = null;
 

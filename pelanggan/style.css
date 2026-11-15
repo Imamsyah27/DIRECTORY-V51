@@ -288,3 +288,12 @@ body{
 .bo-batches{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 .bo-bchip{ display:inline-block; padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:700; background:rgba(100,116,139,.15); color:inherit; }
 .bo-bchip.done{ background:rgba(22,163,74,.16); color:#16a34a; } .bo-bchip.part{ background:rgba(217,119,6,.16); color:#d97706; }
+
+/* ---- Pesan Baru: umpan balik tagar langsung ---- */
+.no-feedback{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; min-height:0; font-size:12.5px; font-weight:600; }
+.no-feedback:empty{ display:none; }
+.no-feedback span{ padding:3px 8px; border-radius:6px; }
+.no-feedback .fb-ok{ background:var(--success-soft); color:var(--success); }
+.no-feedback .fb-info{ background:var(--info-soft); color:var(--info); }
+.no-feedback .fb-bad{ background:var(--danger-soft); color:var(--danger); }
+.btn.is-disabled{ opacity:.45; cursor:not-allowed; }

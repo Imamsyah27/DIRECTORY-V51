@@ -23,3 +23,13 @@ function getUTCDate() {
 // Jika portal pelanggan ada di domain lain, isi mis. "https://pelanggan.domainanda.com/"
 // (atau biarkan kosong, lalu isi lewat tombol "Alamat Portal" saat memilih pelanggan).
 const PORTAL_PELANGGAN_URL = "pelanggan/";
+
+// ---------------------------------------------------------------------
+// KEAMANAN: login admin (Supabase Auth). Lihat docs/01-KEAMANAN.md.
+// false = seperti sebelumnya (tanpa login).
+// true  = dashboard admin wajib login email + password.
+// Ubah ke true SETELAH membuat user admin di Supabase -> Authentication,
+// lalu jalankan sql/keamanan/K2-login-admin-kunci-tabel.sql.
+const ADMIN_LOGIN_WAJIB = false;
+// Otomatis keluar bila tidak ada aktivitas (menit). 0 = nonaktif.
+const ADMIN_AUTO_LOGOUT_MENIT = 120;

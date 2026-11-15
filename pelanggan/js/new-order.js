@@ -45,6 +45,24 @@ async function cuRpcKirim(name, params, hariIni) {
     if (r.error && /does not exist|schema cache|Could not find the function/i.test(r.error.message || "")) return cuRpc(name, params);
     return r;
 }
+Object.assign(TRANSLATIONS.id, {
+    no_fb_dup: "{n} tagar kembar dihapus otomatis", no_fb_over: "Kelebihan {n} tagar (maks. 20 per pesanan)",
+    no_fb_ok: "Siap dikirim: {n} tagar × {d} hari", no_draft: "Draf tagar sebelumnya dipulihkan", no_last: "Pilihan terakhir Anda dipakai lagi"
+});
+Object.assign(TRANSLATIONS.en, {
+    no_fb_dup: "{n} duplicate tags removed automatically", no_fb_over: "{n} tags too many (max 20 per order)",
+    no_fb_ok: "Ready to send: {n} tags × {d} days", no_draft: "Your previous tag draft was restored", no_last: "Your last choice was reused"
+});
+/* Ingat pilihan paket/durasi terakhir & draf tagar supaya pesan ulang lebih cepat (hanya di browser ini). */
+const NO_LAST_KEY = "no_last_choice", NO_DRAFT_KEY = "no_tag_draft";
+function noStore(kind, key, val) { try { const s = kind === "l" ? localStorage : sessionStorage; if (val === undefined) return s.getItem(key); if (val === null) s.removeItem(key); else s.setItem(key, val); } catch (e) { return null; } }
+/** Hitung tagar mentah vs unik untuk umpan balik langsung. */
+function tagStats(raw) {
+    const all = String(raw || "").split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
+    const uniq = parseTags(raw);
+    return { total: all.length, uniq: uniq.length, dup: all.length - uniq.length };
+}
+
 Object.assign(SERVER_ERROR_MAP, {
     "Tagar wajib diisi": "rn_err_tag",
     "Pesanan dengan tagar ini masih menunggu konfirmasi": "no_err_dup",
@@ -52,7 +70,9 @@ Object.assign(SERVER_ERROR_MAP, {
 });
 
 function openNewOrderModal() {
-    const st = { hari: 30, pkg: "BEM" };
+    let last = null; try { last = JSON.parse(noStore("l", NO_LAST_KEY) || "null"); } catch (e) {}
+    const st = { hari: (last && Number(last.hari) >= 1 && Number(last.hari) <= 365) ? Number(last.hari) : 30, pkg: (last && RN_PKGS.includes(last.pkg)) ? last.pkg : "BEM" };
+    const draft = noStore("s", NO_DRAFT_KEY) || "";
     $("modalBox").innerHTML = `
         <div class="rn-head"><div class="rn-icon">🛒</div>
             <div><div class="modal-title" style="margin:0">${escapeHtml(t("no_modal_title"))}</div>
@@ -72,7 +92,8 @@ function openNewOrderModal() {
 
         <div class="rn-block">
             <label class="rn-label" for="noTags">${escapeHtml(t("no_tags_label"))} <span class="no-count" id="noCount"></span></label>
-            <textarea id="noTags" class="no-area" rows="4" placeholder="${escapeHtml(t("no_tag_ph"))}" autocomplete="off"></textarea>
+            <textarea id="noTags" class="no-area" rows="4" placeholder="${escapeHtml(t("no_tag_ph"))}" autocomplete="off" spellcheck="false" aria-describedby="noFeedback">${escapeHtml(draft)}</textarea>
+            <div class="no-feedback" id="noFeedback" aria-live="polite"></div>
             <div class="rn-hint">${escapeHtml(t("no_tags_hint"))}</div>
         </div>
 
@@ -101,11 +122,27 @@ function openNewOrderModal() {
         $("noPkgs").querySelectorAll(".rn-pkg").forEach(c => c.classList.toggle("on", c.dataset.pkg === st.pkg));
     };
     $("noHari").addEventListener("input", sync);
-    $("noTags").addEventListener("input", () => { const n = parseTags($("noTags").value).length; $("noCount").textContent = n ? "· " + t("no_tags_count", { n }) : ""; pb.schedule(); });
+    const feedback = () => {
+        const v = $("noTags").value, s2 = tagStats(v), hari = parseInt($("noHari").value, 10), fb = $("noFeedback");
+        $("noCount").textContent = s2.uniq ? "· " + t("no_tags_count", { n: s2.uniq }) : "";
+        const msgs = [];
+        if (s2.dup > 0) msgs.push(`<span class="fb-info">${escapeHtml(t("no_fb_dup", { n: s2.dup }))}</span>`);
+        if (s2.uniq > 20) msgs.push(`<span class="fb-bad">${escapeHtml(t("no_fb_over", { n: s2.uniq - 20 }))}</span>`);
+        else if (s2.uniq > 0 && hari >= 1 && hari <= 365) msgs.push(`<span class="fb-ok">${escapeHtml(t("no_fb_ok", { n: s2.uniq, d: hari }))}</span>`);
+        fb.innerHTML = msgs.join("");
+        const bad = !s2.uniq || s2.uniq > 20 || !(hari >= 1 && hari <= 365);
+        $("noYes").classList.toggle("is-disabled", bad);
+        $("noYes").setAttribute("aria-disabled", String(bad));
+        noStore("s", NO_DRAFT_KEY, v.trim() ? v : null);
+    };
+    $("noTags").addEventListener("input", () => { feedback(); pb.schedule(); });
+    $("noHari").addEventListener("input", feedback);
     $("noChips").addEventListener("click", (e) => { const c = e.target.closest(".rn-chip"); if (c) { $("noHari").value = c.dataset.n; sync(); } });
     $("noPkgs").addEventListener("click", (e) => { const c = e.target.closest(".rn-pkg"); if (c) { st.pkg = c.dataset.pkg; sync(); } });
     $("noNo").addEventListener("click", closeModal);
     sync();
+    feedback();
+    if (draft) showToast(t("no_draft"), "info");
     ensurePriceInfo().then(() => { if (!pkgAvail(st.pkg)) { const a = RN_PKGS.find(p => pkgAvail(p)); if (a) { st.pkg = a; sync(); } } });
 
     $("noYes").addEventListener("click", async () => {
@@ -126,6 +163,7 @@ function openNewOrderModal() {
             showToast(/does not exist|schema cache|Could not find the function/i.test(m) ? t("rn_err_not_ready") : (translateServerError(m) || t("rn_err_generic")), "danger");
             return;
         }
+        noStore("l", NO_LAST_KEY, JSON.stringify({ pkg: st.pkg, hari })); noStore("s", NO_DRAFT_KEY, null);
         await loadRenewals(); if (typeof loadCoin === "function") loadCoin();
         showRenewSent({ id: data && data.id, tagar: tags.join(", "), pkg: st.pkg, hari, isNew: true, count: tags.length, note, total: data && data.total, kode: pb.kode() });
     });

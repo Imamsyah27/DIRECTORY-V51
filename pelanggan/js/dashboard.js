@@ -411,3 +411,9 @@ function openTomorrowModal() {
 function closeModal() {
     document.getElementById("modalOverlay").classList.remove("show");
 }
+/* Tombol Esc menutup dialog (kecuali saat langkah pembayaran terbuka, supaya tidak batal tak sengaja). */
+document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || document.querySelector(".pay-overlay")) return;
+    const m = document.getElementById("modalOverlay");
+    if (m && m.classList.contains("show")) closeModal();
+});

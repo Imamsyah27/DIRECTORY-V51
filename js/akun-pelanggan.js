@@ -85,8 +85,8 @@ function bindAkunPelangganEvents() {
             showToast("Isi PIN lama dan PIN baru", "danger");
             return;
         }
-        if (baru.length < 4) {
-            showToast("PIN baru minimal 4 karakter", "danger");
+        if (baru.length < 8) {
+            showToast("PIN baru minimal 8 karakter (gabungan angka & huruf lebih aman)", "danger");
             return;
         }
         const { data, error } = await supabaseClient.rpc("admin_change_pin", {

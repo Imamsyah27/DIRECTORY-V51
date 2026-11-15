@@ -1,16 +1,18 @@
 /**
- * Ganti tema warna: putih / hitam / biru / pink.
+ * Ganti tema warna: neo (default) / putih / hitam / biru / pink.
  * - Bagian pertama dijalankan di <head> supaya tema langsung terpasang (tanpa kedip).
  * - Pilihan disimpan di localStorage (kunci = data-key pada tag <script>).
  * - Memicu event "themechange" agar grafik digambar ulang dengan warna baru.
  */
 (function () {
     const KEY = (document.currentScript && document.currentScript.dataset.key) || "app_theme";
-    const THEMES = ["putih", "hitam", "biru", "pink"];
-    const LABEL = { putih: "Putih", hitam: "Hitam", biru: "Biru Muda", pink: "Pink" };
-    const DEFAULT = "biru";
+    const THEMES = ["neo", "putih", "hitam", "biru", "pink"];
+    const LABEL = { neo: "Neo", putih: "Putih", hitam: "Hitam", biru: "Biru Muda", pink: "Pink" };
+    const DEFAULT = "neo";
     const get = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
     let cur = THEMES.includes(get()) ? get() : DEFAULT;
+    // Sekali saja: pindahkan pengguna lama ke tema baru "neo" (tetap bisa kembali lewat tombol tema)
+    try { if (!localStorage.getItem(KEY + "_neo_v1")) { localStorage.setItem(KEY + "_neo_v1", "1"); cur = DEFAULT; } } catch (e) {}
     document.documentElement.setAttribute("data-theme", cur);
 
     function apply(name, announce) {
@@ -29,8 +31,8 @@
 
     function build() {
         if (typeof TRANSLATIONS !== "undefined") {
-            Object.assign(TRANSLATIONS.id, { theme_putih: "Putih", theme_hitam: "Hitam", theme_biru: "Biru Muda", theme_pink: "Pink", theme_title: "Warna tampilan" });
-            Object.assign(TRANSLATIONS.en, { theme_putih: "White", theme_hitam: "Black", theme_biru: "Light Blue", theme_pink: "Pink", theme_title: "Theme color" });
+            Object.assign(TRANSLATIONS.id, { theme_neo: "Neo", theme_putih: "Putih", theme_hitam: "Hitam", theme_biru: "Biru Muda", theme_pink: "Pink", theme_title: "Warna tampilan" });
+            Object.assign(TRANSLATIONS.en, { theme_neo: "Neo", theme_putih: "White", theme_hitam: "Black", theme_biru: "Light Blue", theme_pink: "Pink", theme_title: "Theme color" });
         }
         const sw = document.createElement("div");
         sw.className = "theme-switch";

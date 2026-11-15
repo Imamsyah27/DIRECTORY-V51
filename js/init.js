@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
+    if (window.ADMIN_LOCKED) return;   // belum login admin (js/admin-auth.js)
     try {
         await resetDailyUTC();
         await loadData();
